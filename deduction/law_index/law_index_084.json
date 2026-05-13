@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-084-001",
+      "law_text_ref": {
+        "article_id": "LAW-084-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第八十四条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "扶養控除",
+      "description": "控除対象扶養親族がいる場合に、所得から一定額を控除できる規定。扶養親族の区分（一般・特定・老人）により控除額が異なる。",
+      "calculation": {
+        "type": "fixed_amount_deduction",
+        "formula": {
+          "expression": "控除額 = Σ(区分別控除額 × 区分別人数)",
+          "description": "扶養親族の区分ごとに定められた控除額に人数を乗じて合計する。",
+          "variables": {
+            "一般扶養親族": {
+              "name": "一般扶養親族",
+              "description": "特定扶養親族・老人扶養親族以外の控除対象扶養親族",
+              "amount": 380000,
+              "source": "law_defined",
+              "legal_basis": "第84条第1項本文"
+            },
+            "特定扶養親族": {
+              "name": "特定扶養親族",
+              "description": "年齢19歳以上23歳未満の控除対象扶養親族",
+              "amount": 630000,
+              "source": "law_defined",
+              "legal_basis": "第84条第1項かっこ書",
+              "condition": "年齢19歳以上23歳未満"
+            },
+            "老人扶養親族": {
+              "name": "老人扶養親族",
+              "description": "年齢70歳以上の控除対象扶養親族",
+              "amount": 480000,
+              "source": "law_defined",
+              "legal_basis": "第84条第1項かっこ書",
+              "condition": "年齢70歳以上"
+            }
+          },
+          "summary_table": {
+            "headers": ["区分", "年齢条件", "控除額（1人あたり）"],
+            "rows": [
+              ["一般扶養親族", "16歳以上（特定・老人以外）", "38万円"],
+              ["特定扶養親族", "19歳以上23歳未満", "63万円"],
+              ["老人扶養親族", "70歳以上", "48万円"]
+            ]
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "扶養親族の該当可否を判定します",
+              "expression": "各扶養親族が「控除対象扶養親族」に該当するか確認（第2条）",
+              "note": "年齢16歳以上、合計所得金額48万円以下（給与収入103万円以下）等の要件あり"
+            },
+            {
+              "step": 2,
+              "description": "各扶養親族を区分に分類します",
+              "expression": "年齢で判定：19-22歳→特定、70歳以上→老人、その他→一般"
+            },
+            {
+              "step": 3,
+              "description": "区分ごとに控除額を計算します",
+              "expression": "控除額 = 38万円×一般人数 + 63万円×特定人数 + 48万円×老人人数"
+            }
+          ]
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "扶養親族なし",
+          "input": { "一般": 0, "特定": 0, "老人": 0 },
+          "expected_output": 0,
+          "calculation": "控除額 0円"
+        },
+        {
+          "description": "一般扶養親族1人＋特定扶養親族1人",
+          "input": { "一般": 1, "特定": 1, "老人": 0 },
+          "expected_output": 1010000,
+          "calculation": "38万円×1 + 63万円×1 = 101万円"
+        },
+        {
+          "description": "老人扶養親族2人のみ",
+          "input": { "一般": 0, "特定": 0, "老人": 2 },
+          "expected_output": 960000,
+          "calculation": "48万円×2 = 96万円"
+        },
+        {
+          "description": "全区分1人ずつ",
+          "input": { "一般": 1, "特定": 1, "老人": 1 },
+          "expected_output": 1490000,
+          "calculation": "38万円 + 63万円 + 48万円 = 149万円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-002-034-002",
+          "relation": "第2条で「控除対象扶養親族」「特定扶養親族」「老人扶養親族」が定義されている"
+        },
+        {
+          "related_rule_id": "IDX-085-001",
+          "relation": "第85条で扶養親族の判定時期（12月31日時点）が定められている"
+        }
+      ]
+    }
+  ]
+}

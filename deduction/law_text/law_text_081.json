@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "source": "e-Gov法令API v2",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法",
+    "law_name_kana": "しょとくぜいほう",
+    "retrieved_at": "2026-05-12",
+    "api_url": "https://laws.e-gov.go.jp/api/2/law_data/340AC0000000033",
+    "elm_path": "MainProvision-Part_2-Chapter_2-Section_4-Article_81",
+    "revision_id": "340AC0000000033_20260401_508AC0000000012",
+    "effective_date": "2026-04-01"
+  },
+  "articles": [
+    {
+      "article_id": "LAW-081-000",
+      "article_num": "第81条",
+      "article_title": "（ひとり親控除）",
+      "content_hash": "sha256:e7a452d05f7ddb69735a0594551dba2ab4d79991843994ad2f6c0a8aa140f72a",
+      "api_revision_id": "340AC0000000033_20260401_508AC0000000012",
+      "effective_date": "2026-04-01",
+      "raw_json": {
+        "Article": {
+          "ArticleCaption": "（ひとり親控除）",
+          "ArticleTitle": "第八十一条",
+          "Paragraph": [
+            {
+              "ParagraphNum": null,
+              "Num": "1",
+              "ParagraphSentence": {
+                "Sentence": [
+                  "居住者がひとり親である場合には、その者のその年分の総所得金額、退職所得金額又は山林所得金額から三十五万円を控除する。"
+                ]
+              }
+            },
+            {
+              "ParagraphNum": "２",
+              "Num": "2",
+              "ParagraphSentence": {
+                "Sentence": [
+                  "前項の規定による控除は、ひとり親控除という。"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

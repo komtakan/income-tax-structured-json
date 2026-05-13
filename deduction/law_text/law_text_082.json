@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "source": "e-Gov法令API v2",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法",
+    "law_name_kana": "しょとくぜいほう",
+    "retrieved_at": "2026-05-12",
+    "api_url": "https://laws.e-gov.go.jp/api/2/law_data/340AC0000000033",
+    "elm_path": "MainProvision-Part_2-Chapter_2-Section_4-Article_82",
+    "revision_id": "340AC0000000033_20260401_508AC0000000012",
+    "effective_date": "2026-04-01"
+  },
+  "articles": [
+    {
+      "article_id": "LAW-082-000",
+      "article_num": "第82条",
+      "article_title": "（勤労学生控除）",
+      "content_hash": "sha256:e8697385522aed92a9ded22f6c0c1e6fd8b3a859e0a87e765171fba593bc59af",
+      "api_revision_id": "340AC0000000033_20260401_508AC0000000012",
+      "effective_date": "2026-04-01",
+      "raw_json": {
+        "Article": {
+          "ArticleCaption": "（勤労学生控除）",
+          "ArticleTitle": "第八十二条",
+          "Paragraph": [
+            {
+              "ParagraphNum": null,
+              "Num": "1",
+              "ParagraphSentence": {
+                "Sentence": [
+                  "居住者が勤労学生である場合には、その者のその年分の総所得金額、退職所得金額又は山林所得金額から二十七万円を控除する。"
+                ]
+              }
+            },
+            {
+              "ParagraphNum": "２",
+              "Num": "2",
+              "ParagraphSentence": {
+                "Sentence": [
+                  "前項の規定による控除は、勤労学生控除という。"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

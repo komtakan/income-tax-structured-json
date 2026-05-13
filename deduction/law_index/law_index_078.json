@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-078-001",
+      "law_text_ref": {
+        "article_id": "LAW-078-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第七十八条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "寄附金控除",
+      "description": "居住者が特定寄附金を支出した場合に、寄附金額（上限：所得の40%）から2,000円を控除した額を所得から控除できる規定。",
+      "calculation": {
+        "type": "donation_deduction",
+        "formula": {
+          "expression": "控除額 = max(0, min(特定寄附金支出額, 合計所得金額×40%) - 2,000円)",
+          "description": "特定寄附金の支出額（所得の40%を上限）から2,000円を控除した額。2,000円以下の支出では控除額ゼロ。",
+          "variables": {
+            "特定寄附金支出額": {
+              "name": "特定寄附金支出額",
+              "description": "その年中に支出した特定寄附金の合計額",
+              "source": "user_input",
+              "unit": "JPY"
+            },
+            "合計所得金額": {
+              "name": "合計所得金額",
+              "description": "総所得金額＋退職所得金額＋山林所得金額",
+              "source": "calculated_from_user_profile",
+              "unit": "JPY"
+            },
+            "所得の40%": {
+              "name": "所得の40%",
+              "description": "合計所得金額×40%",
+              "source": "calculated",
+              "formula": "合計所得金額×0.4"
+            },
+            "下限": {
+              "name": "下限",
+              "description": "2,000円（最低控除額）",
+              "amount": 2000,
+              "source": "law_defined",
+              "legal_basis": "第78条第1項第2号"
+            }
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "特定寄附金の支出額を集計します",
+              "expression": "特定寄附金支出額 = 年間の寄附金合計額",
+              "note": "第78条第2項に該当する寄附金のみが対象。学校の入学に関するものを除く"
+            },
+            {
+              "step": 2,
+              "description": "寄附金の上限を計算します",
+              "expression": "上限額 = 合計所得金額 × 40%",
+              "note": "寄附額が上限を超える場合は上限額で打ち切り"
+            },
+            {
+              "step": 3,
+              "description": "控除額を計算します",
+              "expression": "控除額 = min(特定寄附金支出額, 上限額) - 2,000円",
+              "note": "2,000円以下なら控除額ゼロ。控除額が負の場合は0"
+            }
+          ],
+          "summary_table": {
+            "headers": [
+              "項目",
+              "金額"
+            ],
+            "rows": [
+              [
+                "特定寄附金支出額",
+                "年間支出合計"
+              ],
+              [
+                "上限",
+                "合計所得金額 × 40%"
+              ],
+              [
+                "控除額",
+                "min(支出額, 上限) - 2,000円"
+              ],
+              [
+                "下限",
+                "0円（支出額 ≦ 2,000円）"
+              ]
+            ]
+          }
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "所得400万円・寄附金10万円（典型的ケース）",
+          "input": {
+            "特定寄附金支出額": 100000,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 98000,
+          "calculation": "上限=160万、min(10万, 160万)-0.2万=9.8万"
+        },
+        {
+          "description": "所得400万円・寄附金200万円（上限超過）",
+          "input": {
+            "特定寄附金支出額": 2000000,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 1598000,
+          "calculation": "上限=160万、min(200万, 160万)-0.2万=159.8万"
+        },
+        {
+          "description": "所得200万円・寄附金1万円",
+          "input": {
+            "特定寄附金支出額": 10000,
+            "合計所得金額": 2000000
+          },
+          "expected_output": 8000,
+          "calculation": "上限=80万、min(1万, 80万)-0.2万=0.8万"
+        },
+        {
+          "description": "所得400万円・寄附金1,500円（下限以下）",
+          "input": {
+            "特定寄附金支出額": 1500,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 0,
+          "calculation": "min(1500, 160万)-2000 < 0 → 控除額0円"
+        },
+        {
+          "description": "所得400万円・寄附金2,000円（境界値）",
+          "input": {
+            "特定寄附金支出額": 2000,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 0,
+          "calculation": "min(2000, 160万)-2000=0 → 控除額0円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-078-002",
+          "relation": "第78条第2項で特定寄附金の範囲（国・地方公共団体・公益法人等への寄附）が定義されている"
+        },
+        {
+          "related_rule_id": "IDX-002-030-001",
+          "relation": "第2条で「合計所得金額」が定義されている"
+        }
+      ]
+    }
+  ]
+}

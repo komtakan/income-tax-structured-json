@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-080-001",
+      "law_text_ref": {
+        "article_id": "LAW-080-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第八十条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "寡婦控除",
+      "description": "居住者が寡婦である場合に、所得から27万円を控除できる規定。",
+      "calculation": {
+        "type": "fixed_amount_deduction",
+        "formula": {
+          "expression": "控除額 = 27万円",
+          "description": "寡婦に該当する場合、一律27万円を控除する。",
+          "variables": {
+            "寡婦控除額": {
+              "name": "寡婦控除額",
+              "description": "寡婦に該当する居住者に適用される控除額",
+              "amount": 270000,
+              "source": "law_defined",
+              "legal_basis": "第80条第1項"
+            }
+          },
+          "summary_table": {
+            "headers": [
+              "区分",
+              "控除額"
+            ],
+            "rows": [
+              [
+                "寡婦",
+                "27万円"
+              ]
+            ]
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "寡婦該当性および所得制限を判定します",
+              "expression": "寡婦に該当 && 合計所得金額 <= 5,000,000円",
+              "note": "死別：扶養親族あり または 合計所得金額500万円以下。離別：扶養親族あり かつ 合計所得金額500万円以下。いずれも婚姻していないこと。"
+            },
+            {
+              "step": 2,
+              "description": "該当する場合、27万円を控除します",
+              "expression": "控除額 = 27万円"
+            }
+          ]
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "寡婦に該当",
+          "input": {
+            "寡婦": true
+          },
+          "expected_output": 270000,
+          "calculation": "控除額 27万円"
+        },
+        {
+          "description": "寡婦に非該当",
+          "input": {
+            "寡婦": false
+          },
+          "expected_output": 0,
+          "calculation": "控除額 0円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-002-037-001",
+          "relation": "第2条で「寡婦」が定義されている"
+        }
+      ]
+    }
+  ]
+}

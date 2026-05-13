@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-082-001",
+      "law_text_ref": {
+        "article_id": "LAW-082-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第八十二条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "勤労学生控除",
+      "description": "居住者が勤労学生である場合に、所得から27万円を控除できる規定。",
+      "calculation": {
+        "type": "fixed_amount_deduction",
+        "formula": {
+          "expression": "控除額 = 27万円",
+          "description": "勤労学生に該当する場合、一律27万円を控除する。",
+          "variables": {
+            "勤労学生控除額": {
+              "name": "勤労学生控除額",
+              "description": "勤労学生に該当する居住者に適用される控除額",
+              "amount": 270000,
+              "source": "law_defined",
+              "legal_basis": "第82条第1項"
+            }
+          },
+          "summary_table": {
+            "headers": [
+              "区分",
+              "控除額"
+            ],
+            "rows": [
+              [
+                "勤労学生",
+                "27万円"
+              ]
+            ]
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "勤労学生該当性を判定します",
+              "expression": "第2条で定義される「勤労学生」に該当するか確認",
+              "note": "大学等の学生で、自己の勤労による給与所得等があり、合計所得金額75万円以下等の要件あり"
+            },
+            {
+              "step": 2,
+              "description": "該当する場合、27万円を控除します",
+              "expression": "控除額 = 27万円"
+            }
+          ]
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "勤労学生に該当",
+          "input": {
+            "勤労学生": true
+          },
+          "expected_output": 270000,
+          "calculation": "控除額 27万円"
+        },
+        {
+          "description": "勤労学生に非該当",
+          "input": {
+            "勤労学生": false
+          },
+          "expected_output": 0,
+          "calculation": "控除額 0円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-002-039-001",
+          "relation": "第2条で「勤労学生」が定義されている"
+        }
+      ]
+    }
+  ]
+}

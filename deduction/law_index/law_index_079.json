@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-079-001",
+      "law_text_ref": {
+        "article_id": "LAW-079-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第七十九条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "障害者控除",
+      "description": "居住者、配偶者、扶養親族が障害者の場合に、区分に応じた定額を所得から控除できる規定。3区分（障害者・特別障害者・同居特別障害者）により控除額が異なる。",
+      "calculation": {
+        "type": "fixed_amount_deduction",
+        "formula": {
+          "expression": "控除額 = Σ(区分別控除額 × 区分別人人数)",
+          "description": "障害者の区分ごとに定められた控除額に人数を乗じて合計する。本人・同一生計配偶者・扶養親族が対象。",
+          "variables": {
+            "障害者": {
+              "name": "障害者",
+              "description": "特別障害者以外の障害者",
+              "amount": 270000,
+              "source": "law_defined",
+              "legal_basis": "第79条第1項"
+            },
+            "特別障害者": {
+              "name": "特別障害者",
+              "description": "障害者のうち重度の障害がある者",
+              "amount": 400000,
+              "source": "law_defined",
+              "legal_basis": "第79条第1項かっこ書"
+            },
+            "同居特別障害者": {
+              "name": "同居特別障害者",
+              "description": "特別障害者で、居住者等と同居を常況としている者",
+              "amount": 750000,
+              "source": "law_defined",
+              "legal_basis": "第79条第3項"
+            }
+          },
+          "summary_table": {
+            "headers": [
+              "区分",
+              "控除額（1人あたり）"
+            ],
+            "rows": [
+              [
+                "障害者",
+                "27万円"
+              ],
+              [
+                "特別障害者",
+                "40万円"
+              ],
+              [
+                "同居特別障害者",
+                "75万円"
+              ]
+            ]
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "障害者の該当可否を判定します",
+              "expression": "本人・同一生計配偶者・扶養親族が障害者か確認",
+              "note": "第2条で「障害者」「特別障害者」が定義されている"
+            },
+            {
+              "step": 2,
+              "description": "各障害者を区分に分類します",
+              "expression": "特別障害者かつ同居→同居特別障害者(75万)、特別障害者(40万)、その他障害者(27万)"
+            },
+            {
+              "step": 3,
+              "description": "区分ごとに控除額を計算します",
+              "expression": "控除額 = 27万円×障害者人数 + 40万円×特別障害者人数 + 75万円×同居特別障害者人数"
+            }
+          ]
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "障害者なし",
+          "input": {
+            "障害者": 0,
+            "特別障害者": 0,
+            "同居特別障害者": 0
+          },
+          "expected_output": 0,
+          "calculation": "控除額 0円"
+        },
+        {
+          "description": "障害者1人＋特別障害者1人",
+          "input": {
+            "障害者": 1,
+            "特別障害者": 1,
+            "同居特別障害者": 0
+          },
+          "expected_output": 670000,
+          "calculation": "27万円 + 40万円 = 67万円"
+        },
+        {
+          "description": "同居特別障害者1人のみ",
+          "input": {
+            "障害者": 0,
+            "特別障害者": 0,
+            "同居特別障害者": 1
+          },
+          "expected_output": 750000,
+          "calculation": "75万円 × 1 = 75万円"
+        },
+        {
+          "description": "全区分1人ずつ",
+          "input": {
+            "障害者": 1,
+            "特別障害者": 1,
+            "同居特別障害者": 1
+          },
+          "expected_output": 1420000,
+          "calculation": "27万円 + 40万円 + 75万円 = 142万円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-002-036-001",
+          "relation": "第2条で「障害者」「特別障害者」が定義されている"
+        }
+      ]
+    }
+  ]
+}

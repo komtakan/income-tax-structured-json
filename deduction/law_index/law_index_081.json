@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-081-001",
+      "law_text_ref": {
+        "article_id": "LAW-081-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第八十一条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "ひとり親控除",
+      "description": "居住者がひとり親である場合に、所得から35万円を控除できる規定。",
+      "calculation": {
+        "type": "fixed_amount_deduction",
+        "formula": {
+          "expression": "控除額 = 35万円",
+          "description": "ひとり親に該当する場合、一律35万円を控除する。",
+          "variables": {
+            "ひとり親控除額": {
+              "name": "ひとり親控除額",
+              "description": "ひとり親に該当する居住者に適用される控除額",
+              "amount": 350000,
+              "source": "law_defined",
+              "legal_basis": "第81条第1項"
+            }
+          },
+          "summary_table": {
+            "headers": [
+              "区分",
+              "控除額"
+            ],
+            "rows": [
+              [
+                "ひとり親",
+                "35万円"
+              ]
+            ]
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "ひとり親該当性および所得制限を判定します",
+              "expression": "ひとり親に該当 && 合計所得金額 <= 5,000,000円",
+              "note": "婚姻していない者で生計を一にする子あり。所得制限500万円以下"
+            },
+            {
+              "step": 2,
+              "description": "該当する場合、35万円を控除します",
+              "expression": "控除額 = 35万円"
+            }
+          ]
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "ひとり親に該当",
+          "input": {
+            "ひとり親": true
+          },
+          "expected_output": 350000,
+          "calculation": "控除額 35万円"
+        },
+        {
+          "description": "ひとり親に非該当",
+          "input": {
+            "ひとり親": false
+          },
+          "expected_output": 0,
+          "calculation": "控除額 0円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-002-038-001",
+          "relation": "第2条で「ひとり親」が定義されている"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-075-001",
+      "law_text_ref": {
+        "article_id": "LAW-075-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第七十五条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "小規模企業共済等掛金控除",
+      "description": "居住者が小規模企業共済等掛金を支払った場合、支払った全額を所得から控除できる規定。",
+      "calculation": {
+        "type": "fixed_amount_deduction",
+        "formula": {
+          "expression": "控除額 = 支払掛金の合計額",
+          "description": "その年に実際に支払った小規模企業共済等掛金の全額を控除する。",
+          "variables": {
+            "掛金": {
+              "name": "小規模企業共済等掛金",
+              "description": "第75条第2項各号に掲げる掛金の年間支払合計額（小規模企業共済、確定拠出年金等）",
+              "amount": "user_input",
+              "source": "user_input",
+              "legal_basis": "第75条第1項"
+            }
+          },
+          "summary_table": {
+            "headers": [
+              "対象",
+              "控除額"
+            ],
+            "rows": [
+              [
+                "支払掛金",
+                "支払額の全額"
+              ]
+            ]
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "年間の掛金支払額を集計します",
+              "expression": "小規模企業共済掛金、確定拠出年金掛金等を合計",
+              "note": "第75条第2項の限定列挙"
+            },
+            {
+              "step": 2,
+              "description": "合計額をそのまま控除します",
+              "expression": "控除額 = 支払掛金の合計額"
+            }
+          ]
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "掛金15万円支払",
+          "input": {
+            "掛金": 150000
+          },
+          "expected_output": 150000,
+          "calculation": "控除額 15万円"
+        },
+        {
+          "description": "掛金0円",
+          "input": {
+            "掛金": 0
+          },
+          "expected_output": 0,
+          "calculation": "控除額 0円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-075-002",
+          "relation": "第75条第2項で小規模企業共済等掛金の範囲が定義されている"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-072-001",
+      "law_text_ref": {
+        "article_id": "LAW-072-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第七十二条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "雑損控除",
+      "description": "災害・盗難・横領による資産損失が生じた場合に、損失額が所得の10%（場合により5万円）を超える部分を所得から控除できる規定。災害関連支出の有無により3パターンの閾値計算がある。",
+      "calculation": {
+        "type": "threshold_deduction",
+        "formula": {
+          "expression": "控除額 = max(0, 損失額 - 閾値)",
+          "description": "損失額が閾値を超える部分を控除。閾値は災害関連支出の有無と金額により3パターン。",
+          "variables": {
+            "損失の金額": {
+              "name": "損失の金額",
+              "description": "災害・盗難・横領による資産損失額＋やむを得ない支出額－保険金等補填額",
+              "source": "user_input",
+              "unit": "JPY"
+            },
+            "災害関連支出の金額": {
+              "name": "災害関連支出の金額",
+              "description": "損失の金額のうち災害に直接関連して支出した金額として政令で定める金額",
+              "source": "user_input",
+              "unit": "JPY"
+            },
+            "合計所得金額": {
+              "name": "合計所得金額",
+              "description": "総所得金額＋退職所得金額＋山林所得金額",
+              "source": "calculated_from_user_profile",
+              "unit": "JPY"
+            },
+            "所得の10%": {
+              "name": "所得の10%",
+              "description": "合計所得金額×10%",
+              "source": "calculated",
+              "formula": "合計所得金額×0.1"
+            }
+          },
+          "threshold_patterns": [
+            {
+              "pattern": "第1号",
+              "condition": "災害関連支出 <= 5万円（0円含む）",
+              "threshold": "所得の10%"
+            },
+            {
+              "pattern": "第2号",
+              "condition": "災害関連支出 > 5万円",
+              "threshold": "min(損失額 - (災害関連支出 - 5万円), 所得の10%)"
+            },
+            {
+              "pattern": "第3号",
+              "condition": "損失額が全額災害関連支出",
+              "threshold": "min(5万円, 所得の10%)"
+            }
+          ],
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "損失額を計算します",
+              "expression": "損失額 = 資産損失額 + やむを得ない支出額 - 保険金等補填額",
+              "note": "生活に通常必要でない資産は対象外（第62条、第70条参照）"
+            },
+            {
+              "step": 2,
+              "description": "災害関連支出の有無と金額でパターン判定",
+              "expression": "災害関連支出≦5万→第1号、5万超→第2号、全額災害関連支出→第3号"
+            },
+            {
+              "step": 3,
+              "description": "パターンに応じた閾値を計算",
+              "expression": "上記threshold_patterns参照"
+            },
+            {
+              "step": 4,
+              "description": "控除額を計算します",
+              "expression": "控除額 = max(0, 損失額 - 閾値)",
+              "note": "上限設定なし"
+            }
+          ],
+          "summary_table": {
+            "headers": [
+              "パターン",
+              "条件",
+              "閾値"
+            ],
+            "rows": [
+              [
+                "第1号",
+                "災害関連支出≦5万円",
+                "所得×10%"
+              ],
+              [
+                "第2号",
+                "災害関連支出>5万円",
+                "min(損失額-(災害支出-5万), 所得×10%)"
+              ],
+              [
+                "第3号",
+                "全額災害関連支出",
+                "min(5万円, 所得×10%)"
+              ]
+            ]
+          }
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される。控除しきれない場合は翌年以後3年間繰越可能（第70条）。"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "所得400万・損失50万・災害支出0円（第1号）",
+          "input": {
+            "損失の金額": 500000,
+            "災害関連支出の金額": 0,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 100000,
+          "calculation": "閾値=所得×10%=40万、超過額=10万"
+        },
+        {
+          "description": "所得400万・損失50万・災害支出8万（第2号）",
+          "input": {
+            "損失の金額": 500000,
+            "災害関連支出の金額": 80000,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 100000,
+          "calculation": "閾値=min(50万-3万, 40万)=40万、超過額=10万"
+        },
+        {
+          "description": "所得400万・損失50万・全額災害支出（第3号）",
+          "input": {
+            "損失の金額": 500000,
+            "災害関連支出の金額": 500000,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 450000,
+          "calculation": "閾値=min(5万, 40万)=5万、超過額=45万"
+        },
+        {
+          "description": "所得400万・損失30万・災害支出0円（閾値以下）",
+          "input": {
+            "損失の金額": 300000,
+            "災害関連支出の金額": 0,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 0,
+          "calculation": "閾値=40万、損失額≦閾値 → 控除額0円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-070-001",
+          "relation": "第70条に雑損控除の繰越規定（3年間）がある"
+        },
+        {
+          "related_rule_id": "IDX-002-030-001",
+          "relation": "第2条で「合計所得金額」が定義されている"
+        }
+      ]
+    }
+  ]
+}

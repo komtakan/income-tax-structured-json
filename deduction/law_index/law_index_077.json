@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-077-001",
+      "law_text_ref": {
+        "article_id": "LAW-077-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第七十七条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "地震保険料控除",
+      "description": "居住者が地震保険料を支払った場合に、支払額（上限5万円）を所得から控除できる規定。",
+      "calculation": {
+        "type": "tiered_cap_deduction",
+        "formula": {
+          "expression": "控除額 = min(地震保険料, 5万円) + min(旧長期損害保険料, 1.5万円) ※合計上限5万円",
+          "description": "地震保険料（上限5万円）と旧長期損害保険料（上限1.5万円）の合計。全体上限5万円。",
+          "variables": {
+            "地震保険料": {
+              "name": "地震保険料",
+              "description": "その年中に支払った地震等損害部分の保険料又は掛金（剰余金・割戻金控除後）",
+              "source": "user_input",
+              "unit": "JPY",
+              "max_deduction": 50000
+            },
+            "旧長期損害保険料": {
+              "name": "旧長期損害保険料",
+              "description": "平成18年末までに締結した保険期間10年以上の積立型損害保険契約等に係る保険料",
+              "source": "user_input",
+              "unit": "JPY",
+              "max_deduction": 15000,
+              "legal_basis": "所得税法附則第26条の2"
+            }
+          },
+          "brackets": [
+            {
+              "range": "5万円以下",
+              "condition": "地震保険料 <= 50000",
+              "deduction": "地震保険料（全額）",
+              "legal_basis": "第77条第1項本文"
+            },
+            {
+              "range": "5万円超",
+              "condition": "地震保険料 > 50000",
+              "deduction": 50000,
+              "legal_basis": "第77条第1項かっこ書"
+            }
+          ],
+          "summary_table": {
+            "headers": [
+              "支払地震保険料",
+              "控除額"
+            ],
+            "rows": [
+              [
+                "地震保険料",
+                "min(支払額, 5万円)"
+              ],
+              [
+                "旧長期損害保険料",
+                "min(支払額, 1.5万円)"
+              ],
+              [
+                "合計上限",
+                "5万円"
+              ]
+            ]
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "地震保険料と旧長期損害保険料を集計します",
+              "expression": "地震保険料 = 支払保険料 - 剰余金・割戻金",
+              "note": "対象：居住用家屋・生活用動産の地震等損害を補填する保険"
+            },
+            {
+              "step": 1.5,
+              "description": "旧長期損害保険料がある場合は別途計算します",
+              "expression": "旧長期控除額 = min(旧長期損害保険料, 1.5万円)",
+              "note": "平成18年12月31日以前に締結された長期損害保険契約等が対象"
+            },
+            {
+              "step": 2,
+              "description": "地震保険料の控除額を計算します（上限5万円）",
+              "expression": "控除額 = min(地震保険料, 5万円)"
+            },
+            {
+              "step": 4,
+              "description": "合計控除額を計算します",
+              "expression": "控除額 = min(地震保険控除額 + 旧長期控除額, 5万円)",
+              "note": "両方ある場合は合計5万円が上限"
+            }
+          ],
+          "note": "地震保険料と旧長期損害保険料の両方がある場合は合計して最高5万円。旧長期のみの場合は上限1.5万円。"
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "地震保険料3万円（上限未満）",
+          "input": {
+            "地震保険料": 30000
+          },
+          "expected_output": 30000,
+          "calculation": "3万円 ≦ 5万円 → 全額控除"
+        },
+        {
+          "description": "地震保険料8万円（上限超過）",
+          "input": {
+            "地震保険料": 80000
+          },
+          "expected_output": 50000,
+          "calculation": "8万円 > 5万円 → 5万円でキャップ"
+        },
+        {
+          "description": "地震保険料5万円（境界値）",
+          "input": {
+            "地震保険料": 50000
+          },
+          "expected_output": 50000,
+          "calculation": "5万円 = 上限 → 5万円"
+        },
+        {
+          "description": "地震保険料0円",
+          "input": {
+            "地震保険料": 0
+          },
+          "expected_output": 0,
+          "calculation": "控除額0円"
+        },
+        {
+          "description": "地震保険料3万円＋旧長期損害保険料2万円（合算上限超過）",
+          "input": {
+            "地震保険料": 30000,
+            "旧長期損害保険料": 20000
+          },
+          "expected_output": 45000,
+          "calculation": "地震min(3万,5万)=3万 + 旧長期min(2万,1.5万)=1.5万 → 合計4.5万（5万キャップ未満）"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-077-002",
+          "relation": "第77条第2項で損害保険契約等の範囲が定義されている"
+        }
+      ]
+    }
+  ]
+}

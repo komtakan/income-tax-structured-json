@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-073-001",
+      "law_text_ref": {
+        "article_id": "LAW-073-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第七十三条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "医療費控除",
+      "description": "居住者が医療費を支払った場合に、医療費から保険金等補填額を控除した実額が、所得の5%（上限10万円）を超える部分を所得から控除できる規定。上限200万円。",
+      "calculation": {
+        "type": "threshold_deduction",
+        "formula": {
+          "expression": "控除額 = min(200万円, max(0, 医療費実額 - min(合計所得金額×5%, 10万円)))",
+          "description": "医療費実額が閾値（所得の5%または10万円のいずれか低い方）を超えた場合、超えた額を控除。上限200万円。",
+          "variables": {
+            "医療費実額": {
+              "name": "医療費実額",
+              "description": "その年中に支払った医療費の合計額から保険金等で補填される額を控除した金額",
+              "source": "user_input",
+              "unit": "JPY"
+            },
+            "合計所得金額": {
+              "name": "合計所得金額",
+              "description": "総所得金額＋退職所得金額＋山林所得金額",
+              "source": "calculated_from_user_profile",
+              "unit": "JPY"
+            },
+            "閾値": {
+              "name": "閾値",
+              "description": "min(合計所得金額×5%, 10万円)",
+              "source": "calculated",
+              "formula": "min(合計所得金額×0.05, 100000)"
+            }
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "医療費実額を計算します",
+              "expression": "医療費実額 = 支払医療費合計 - 保険金等補填額",
+              "note": "自己又は生計を一にする配偶者その他親族の医療費が対象"
+            },
+            {
+              "step": 2,
+              "description": "閾値を計算します",
+              "expression": "閾値 = min(合計所得金額×5%, 10万円)",
+              "note": "所得が200万円以下なら所得×5%、200万円超なら10万円"
+            },
+            {
+              "step": 3,
+              "description": "医療費実額が閾値を超えるか判定",
+              "expression": "医療費実額 <= 閾値 → 控除額 = 0",
+              "note": "閾値以下の場合は控除なし"
+            },
+            {
+              "step": 4,
+              "description": "控除額を計算します",
+              "expression": "控除額 = min(医療費実額 - 閾値, 200万円)",
+              "note": "上限200万円"
+            }
+          ],
+          "summary_table": {
+            "headers": [
+              "項目",
+              "金額"
+            ],
+            "rows": [
+              [
+                "医療費実額",
+                "支払医療費 - 保険金等補填額"
+              ],
+              [
+                "閾値",
+                "min(所得×5%, 10万円)"
+              ],
+              [
+                "控除額",
+                "min(医療費実額 - 閾値, 200万円)"
+              ],
+              [
+                "下限",
+                "0円（医療費実額 ≦ 閾値）"
+              ],
+              [
+                "上限",
+                "200万円"
+              ]
+            ]
+          }
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "所得400万円・医療費実額30万円（典型的ケース）",
+          "input": {
+            "医療費実額": 300000,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 200000,
+          "calculation": "閾値=10万、超過額=20万 → 控除額=20万（200万未満）"
+        },
+        {
+          "description": "所得150万円・医療費実額10万円",
+          "input": {
+            "医療費実額": 100000,
+            "合計所得金額": 1500000
+          },
+          "expected_output": 25000,
+          "calculation": "閾値=7.5万、超過額=2.5万 → 控除額=2.5万"
+        },
+        {
+          "description": "所得400万円・医療費実額5万円（閾値以下）",
+          "input": {
+            "医療費実額": 50000,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 0,
+          "calculation": "閾値=10万、医療費実額≦閾値 → 控除額0円"
+        },
+        {
+          "description": "所得1,000万円・医療費実額250万円（上限超過）",
+          "input": {
+            "医療費実額": 2500000,
+            "合計所得金額": 10000000
+          },
+          "expected_output": 2000000,
+          "calculation": "閾値=10万、超過額=240万 → 上限200万で切捨"
+        },
+        {
+          "description": "医療費実額0円",
+          "input": {
+            "医療費実額": 0,
+            "合計所得金額": 4000000
+          },
+          "expected_output": 0,
+          "calculation": "控除額0円"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-073-002",
+          "relation": "第73条第2項で医療費の範囲が定義されている"
+        },
+        {
+          "related_rule_id": "IDX-002-030-001",
+          "relation": "第2条で「合計所得金額」が定義されている"
+        }
+      ]
+    }
+  ]
+}

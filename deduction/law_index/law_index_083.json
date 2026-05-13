@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "version": "0.3.0",
+    "law_id": "340AC0000000033",
+    "law_name": "所得税法"
+  },
+  "indexes": [
+    {
+      "rule_id": "IDX-083-001",
+      "law_text_ref": {
+        "article_id": "LAW-083-000",
+        "content_hash": "sha256:（実際の運用時はAPIレスポンスから計算）",
+        "article_num": "第八十三条",
+        "paragraph": 1
+      },
+      "category": "所得控除",
+      "sub_category": "配偶者控除",
+      "description": "居住者に控除対象配偶者がいる場合に、居住者の合計所得金額に応じて段階的に控除額が定められる規定。老人控除対象配偶者の場合は加算あり。合計所得金額1,000万円超で適用外。",
+      "calculation": {
+        "type": "cap_deduction",
+        "formula": {
+          "expression": "控除額 = f(居住者の合計所得金額, 配偶者の種類)",
+          "description": "居住者の合計所得金額に応じて3段階の控除額が定められている。1,000万円超は控除なし。",
+          "variables": {
+            "合計所得金額": {
+              "name": "合計所得金額",
+              "description": "第2条第1項第30号で定義。総所得金額＋退職所得金額＋山林所得金額（純損失・雑損失の繰越控除適用前）",
+              "source": "calculated_from_user_profile",
+              "unit": "JPY",
+              "max_threshold": 10000000
+            },
+            "老人控除対象配偶者": {
+              "name": "老人控除対象配偶者",
+              "description": "年齢70歳以上の控除対象配偶者",
+              "source": "user_input",
+              "type": "boolean"
+            }
+          },
+          "brackets": [
+            {
+              "range": "900万円以下",
+              "condition": "合計所得金額 <= 9000000",
+              "deduction": 380000,
+              "deduction_elderly": 480000,
+              "legal_basis": "第83条第1項第1号"
+            },
+            {
+              "range": "900万円超～950万円以下",
+              "condition": "9000000 < 合計所得金額 <= 9500000",
+              "deduction": 260000,
+              "deduction_elderly": 320000,
+              "legal_basis": "第83条第1項第2号"
+            },
+            {
+              "range": "950万円超～1,000万円以下",
+              "condition": "9500000 < 合計所得金額 <= 10000000",
+              "deduction": 130000,
+              "deduction_elderly": 160000,
+              "legal_basis": "第83条第1項第3号"
+            },
+            {
+              "range": "1,000万円超",
+              "condition": "合計所得金額 > 10000000",
+              "deduction": 0,
+              "description": "配偶者控除の適用なし"
+            }
+          ],
+          "summary_table": {
+            "headers": [
+              "合計所得金額",
+              "一般の控除対象配偶者",
+              "老人控除対象配偶者",
+              "該当号"
+            ],
+            "rows": [
+              [
+                "900万円以下",
+                "38万円",
+                "48万円",
+                "第1号"
+              ],
+              [
+                "900万円超～950万円以下",
+                "26万円",
+                "32万円",
+                "第2号"
+              ],
+              [
+                "950万円超～1,000万円以下",
+                "13万円",
+                "16万円",
+                "第3号"
+              ],
+              [
+                "1,000万円超",
+                "0円",
+                "0円",
+                "対象外"
+              ]
+            ]
+          },
+          "step_by_step": [
+            {
+              "step": 1,
+              "description": "控除対象配偶者の有無を確認します",
+              "expression": "第2条で定義される「控除対象配偶者」に該当するか確認",
+              "note": "合計所得金額48万円以下（給与収入103万円以下）等の要件あり"
+            },
+            {
+              "step": 2,
+              "description": "老人控除対象配偶者か判定します",
+              "expression": "配偶者が70歳以上 → 老人控除対象配偶者",
+              "note": "年齢は12月31日時点（第85条）"
+            },
+            {
+              "step": 3,
+              "description": "居住者の合計所得金額を確認します",
+              "expression": "合計所得金額 = 総所得金額 + 退職所得金額 + 山林所得金額"
+            },
+            {
+              "step": 4,
+              "description": "所得区分に応じて控除額を決定します",
+              "expression": "上記brackets表に従い控除額を決定",
+              "note": "老人控除対象配偶者の場合は加算後の金額を適用"
+            }
+          ]
+        },
+        "effect": {
+          "type": "reduces_taxable_income",
+          "description": "計算された控除額が総所得金額、退職所得金額、山林所得金額から控除される。居住者の合計所得金額が1,000万円を超える場合は適用なし。"
+        }
+      },
+      "test_cases": [
+        {
+          "description": "所得400万円・一般配偶者",
+          "input": {
+            "合計所得金額": 4000000,
+            "老人控除対象配偶者": false
+          },
+          "expected_output": 380000,
+          "calculation": "900万円以下 → 38万円"
+        },
+        {
+          "description": "所得400万円・老人配偶者",
+          "input": {
+            "合計所得金額": 4000000,
+            "老人控除対象配偶者": true
+          },
+          "expected_output": 480000,
+          "calculation": "900万円以下＋老人 → 48万円"
+        },
+        {
+          "description": "所得920万円・一般配偶者",
+          "input": {
+            "合計所得金額": 9200000,
+            "老人控除対象配偶者": false
+          },
+          "expected_output": 260000,
+          "calculation": "900万円超950万円以下 → 26万円"
+        },
+        {
+          "description": "所得980万円・老人配偶者",
+          "input": {
+            "合計所得金額": 9800000,
+            "老人控除対象配偶者": true
+          },
+          "expected_output": 160000,
+          "calculation": "950万円超1000万円以下＋老人 → 16万円"
+        },
+        {
+          "description": "所得1,200万円（対象外）",
+          "input": {
+            "合計所得金額": 12000000,
+            "老人控除対象配偶者": false
+          },
+          "expected_output": 0,
+          "calculation": "1,000万円超 → 控除なし"
+        }
+      ],
+      "relation_to_other_rules": [
+        {
+          "related_rule_id": "IDX-002-032-001",
+          "relation": "第2条で「控除対象配偶者」「老人控除対象配偶者」が定義されている"
+        },
+        {
+          "related_rule_id": "IDX-085-001",
+          "relation": "第85条で扶養親族等の判定時期（12月31日時点）が定められている"
+        }
+      ]
+    }
+  ]
+}

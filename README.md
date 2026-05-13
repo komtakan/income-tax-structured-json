@@ -1,5 +1,6 @@
 # income-tax-structured-json
 
+![知識を構造化してAIに渡す](og_image.png)
 所得税法の条文をAIが推論・計算に使える形に構造化した3層JSONデータです。
 
 ## 概要
